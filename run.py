@@ -9,7 +9,6 @@ from initialize import openSocket, greetRoom
 from settings import BOTOWNER, LOG_TO_FILE
 from logger import getTime, logMessage
 from commandlevel import getLevel
-from commandlookup import lookup
 
 server = openSocket() # Create a socket bound to the server
 greetRoom(server) # Optional greeting when the bot is turned on. Comment this line to remove
