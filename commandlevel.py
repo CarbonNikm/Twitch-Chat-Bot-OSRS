@@ -1,14 +1,12 @@
 # Author: Nicholas Misleh
 # 
 # To properly install this class, add the following line to the top of run.py
-### from commandlevel import getLevel
+### from commandlookup import lookup
 # 
 # To use this command, add the following lines of code to the "Add functions below" in run.py
-### if "!level" in wordList[0]:
-###     sendMessage(server, getLevel(user, message, wordList))
+### if "!lookup" in wordList[0]:
+###     sendMessage(server, lookup(user, message, wordList))
 ###     break
-#
-# This command is specifically for the streamer, rather than looking up any other player
 #
 
 ########## Imports ##########
@@ -17,21 +15,27 @@ import string, requests
 
 ########## Settings ##########
 
-OSRSNAME = "Nikm" # Change this to set the account to be looked up
+OSRSNAME = "Nikm" # Change this to set the account to be looked up by default
 
 ########## Functions ##########
 
-def getLevel(user, message, wordList):
-    
-    if len(wordList) != 2:
-        return ("@" + user + " Usage: !level [skill name]")
+def lookup(user, message, wordList):
 
-    hiscoreResponse = requests.get("http://services.runescape.com/m=hiscore_oldschool/index_lite.ws?player=" + OSRSNAME)
-    hiscoreResponse = hiscoreResponse.text.replace("\n",",")
-    hiscoreResponse = hiscoreResponse.split(",")
-    skillName = wordList[1].lower()
+    if len(wordList) < 3: # Assume default
+        playerName = OSRSNAME
     
-    # Total exp required per level, placed in an array for fast calculation of exp required until next level
+    else:
+        playerName = wordList[1:len(wordList)-1] # Allows for names with spaces
+        playerName = " ".join(playerName) # Allows for names with spaces
+        
+    skillName = wordList[len(wordList)-1].lower()
+    
+    hiscoreResponse = requests.get("http://services.runescape.com/m=hiscore_oldschool/index_lite.ws?player=" + playerName)
+    hiscoreResponse = hiscoreResponse.text.replace("\n",",") # Remove invisible formatting for valid inputs
+    if "404 - Page not found" in hiscoreResponse:
+        return("@" + user + " Error: invalid username")
+    hiscoreResponse = hiscoreResponse.split(",")
+
     osrsExpRequirementsArray = [0, 0, 83, 174, 276, 388, 512, 650, 801, 969, 1154, 
         1358, 1584, 1833, 2107, 2411, 2746, 3115, 3523, 3973, 4470, 5018, 5624, 
         6291, 7028, 7842, 8740, 9730, 10824, 12031, 13363, 14833, 16456, 
@@ -49,7 +53,7 @@ def getLevel(user, message, wordList):
         skillName = "Total"
     elif "overall" in skillName:
         hiscoreIndex =  1
-        skillName = "Overall"
+        skillName = "Total"
     elif "attack" in skillName:
         hiscoreIndex =  4
         skillName = "Attack"
@@ -65,6 +69,9 @@ def getLevel(user, message, wordList):
     elif "def" in skillName:
         hiscoreIndex = 7
         skillName = "Defence"
+    elif "construction" in skillName:
+        hiscoreIndex =  70            # Moved above crafting to prevent "str" from triggering "construction"
+        skillName = "Construction"
     elif "strength" in skillName:
         hiscoreIndex =  10
         skillName = "Strength"
@@ -188,17 +195,26 @@ def getLevel(user, message, wordList):
     elif "hunt" in skillName:
         hiscoreIndex =  67
         skillName = "Hunter"
-    elif "construction" in skillName:
-        hiscoreIndex =  70
+    elif "con" in skillName:
+        hiscoreIndex = 70
         skillName = "Construction"
+    elif "combat" in skillName:
+        hiscoreIndex = 4
+        skillName = "Combat"
+    elif "cmb" in skillName:
+        hiscoreIndex = 4
+        skillName = "Combat"
     else:
         return ("@" + user + " Error in skill name")
         
     currentLevel = int(hiscoreResponse[hiscoreIndex])
-    if currentLevel == 99:
-        return("@" + user + " ("+ OSRSNAME + ") " + skillName + " level: 99. Exp: " + str(hiscoreResponse[hiscoreIndex + 1] + ". Rank: " + str(hiscoreResponse[hiscoreIndex-1])))
-    elif currentLevel > 100: # Assume 
-        return("@" + user + " ("+ OSRSNAME + ") " + " Total Level: " + str(hiscoreResponse[hiscoreIndex] + ". Rank: " + str(hiscoreResponse[hiscoreIndex-1])))
+    
+    if "Combat" in skillName:
+        return("@" + user + " ("+ playerName + ") " + "Combat stats: A:{}  S:{}  D:{}  H:{}  R:{}  P:{}  M:{}".format(str(hiscoreResponse[4]), str(hiscoreResponse[10]), str(hiscoreResponse[7]), str(hiscoreResponse[13]), str(hiscoreResponse[16]), str(hiscoreResponse[19]), str(hiscoreResponse[22])))
+    elif currentLevel == 99:
+        return("@" + user + " ("+ playerName + ") " + skillName + " level: 99. Exp: " + str(hiscoreResponse[hiscoreIndex + 1]) + ". Rank: " + str(hiscoreResponse[hiscoreIndex-1]))
+    elif "Total" in skillName:
+        return("@" + user + " ("+ playerName + ") " + " Total Level: " + str(hiscoreResponse[hiscoreIndex] + ". Rank: " + str(hiscoreResponse[hiscoreIndex-1])))
     else:
-        return("@" + user + " ("+ OSRSNAME + ") " + skillName + " level: " + str(currentLevel) + ". Exp until next level: " + str(int(osrsExpRequirementsArray[currentLevel+1])-int(hiscoreResponse[hiscoreIndex+1])))
+        return("@" + user + " ("+ playerName + ") " + skillName + " level: " + str(currentLevel) + ". Exp until next level: " + str(int(osrsExpRequirementsArray[currentLevel+1])-int(hiscoreResponse[hiscoreIndex+1])))
         

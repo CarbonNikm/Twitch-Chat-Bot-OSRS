@@ -49,13 +49,9 @@ while botIsRunning:
             if "!lvl" in wordList[0]:
                 sendMessage(server, getLevel(user, message, wordList))
                 break
-            
-            if "!lookup" in wordList[0]:
-                sendMessage(server, lookup(user, message, wordList))
-                break 
                 
-            if "!commands" in message:
-                sendMessage(server, "@"+ user + " !level [skill name] | !lookup [player name] [skill name]")
+            if "!commands" in wordList[0]:
+                sendMessage(server, "@"+ user + " !level [skill name] | !level [player name] [skill name]")
                 break
                 
             if BOTOWNER in user:
